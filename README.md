@@ -4,9 +4,32 @@ This script generates Connexus iCalendar feeds for Nextcloud. It reads planner e
 
 ## Runtime setup
 
-Python dependencies are listed in `requirements.txt`. Install Playwright's Chromium browser in the runtime used by the scheduled job. Keep credentials, student configuration, browser state, and generated feeds outside Git; `.secrets/` and `feeds/` are ignored.
+From the server checkout directory, create the runtime and install the dependencies:
 
-Add a `CONNEXUS_STUDENTS_JSON` setting to `.secrets/calendar_sync.env` on the server. See `calendar_sync.env.example` for the format. The names and Connexus web user IDs belong in that private server-side file and are not stored in this repository.
+```sh
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+python -m playwright install chromium
+```
 
-The script currently sets its data root in `connexus_sync.py`. Keep that path aligned with the server checkout used by cron.
+Keep credentials, student configuration, browser state, and generated feeds outside Git; `.secrets/` and `feeds/` are ignored.
+
+Merge the needed settings from `calendar_sync.env.example` into the existing `.secrets/calendar_sync.env`; do not overwrite existing credentials. Student names and Connexus web user IDs belong only in that private server-side file. Keep the existing `CONNEXUS_UID_DOMAIN` value there so event IDs remain stable. Username and password are needed for automatic sign-in when the saved Connexus session is missing or expires. The failure-alert webhook is optional.
+
+The data root defaults to the directory containing `connexus_sync.py`, so the server checkout directory holds its `.secrets/` and `feeds/` folders.
+
+## Pulling updates
+
+Run the pull from cron as the same server user that owns the checkout and its `.secrets/` directory:
+
+```sh
+git -C /path/to/connexus-calendar-sync pull --ff-only
+```
+
+Then run the sync with the checkout's virtual environment:
+
+```sh
+/path/to/connexus-calendar-sync/.venv/bin/python /path/to/connexus-calendar-sync/connexus_sync.py
+```
 
